@@ -287,11 +287,15 @@ def read_nunchuck():
         joy_x = data[0]
         button_z = data[5]&0x01
 
-        if (joy_x == 0):
+        while (joy_x == 0):
             send_rotate_cw_serial_message()
+            bus.write_byte(address, 0x00)
+            joy_x = bus.read_byte(address)
 
-        if (joy_x == 255):
+        while (joy_x == 255):
             send_rotate_ccw_serial_message()
+            bus.write_byte(address, 0x00)
+            joy_x = bus.read_byte(address)
 
         if (button_z == 0):
             print "Z pressed"
