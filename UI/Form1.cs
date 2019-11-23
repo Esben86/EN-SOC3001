@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -119,11 +119,6 @@ namespace AlarmUI
             {
                 camPosTextBox.Text = commandArguments[1];
             }
-        }
-
-        private void motionDetectionCheckBox_CheckedChanged(object sender, EventArgs e)
-        {
-            
         }
 
         private void rotateCWButton_Click(object sender, EventArgs e)
