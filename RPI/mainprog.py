@@ -64,7 +64,6 @@ def sendAlarmTriggeredToBT():
 def sendAlarmResetToBT():
     chList[5].write(bytearray([0x00]))
 
-# Sends inital values at system start up to UI
 def init_UI():
     global localControllInput
     global motionDetectionControllInput
@@ -91,7 +90,6 @@ def init_UI():
 
     out_sock.sendto("$MOTION_DETECT," + udpValue + "," + "", (OUTGOING_UDP_IP, UDP_PORT))
 
-# Reads GPIO if alarm should be resetted if triggered
 def read_reset_alarm():
     global resetAlarmInput
     resetAlarmInput = GPIO.input(24)
@@ -115,8 +113,7 @@ def send_rotate_ccw_serial_message():
         out_sock.sendto("$CAM_POS," + feedback + "," + "", (OUTGOING_UDP_IP, UDP_PORT))
         print "Feedback from Nucleo:  " + feedback
 
-# Reads GPIO if local controll is low / high
-def read_local_controll_input():
+def read_local_controll():
     global localControllInput
     newValue = GPIO.input(18)
 
@@ -129,8 +126,7 @@ def read_local_controll_input():
 
         out_sock.sendto("$CTRL_MODE," + udpValue, (OUTGOING_UDP_IP, UDP_PORT))
 
-# Reads GPIO if motion detection is low / high
-def read_motion_detection_input():
+def read_motion_detection():
     global motionDetectionControllInput
     newValue = GPIO.input(23)
     changedBy = "Local"
@@ -144,7 +140,6 @@ def read_motion_detection_input():
 
         out_sock.sendto("$MOTION_DETECT," + udpValue + "," + changedBy, (OUTGOING_UDP_IP, UDP_PORT))
 
-# Reads UDP messages from UI
 def read_udp_message():
     try:
         data, addr = in_sock.recvfrom(1280)  # Max recieve size is 1280 bytes
@@ -160,7 +155,6 @@ def read_udp_message():
     except:  # fail after 2 second of no activity
         print("Didn't receive data! [Timeout]")
 
-# Parses UDP messages from UI, and preforms action based on message
 def preform_udp_message_action(command, value):
     global motionDetectionControllInput
     global cameraSensitivity
@@ -189,7 +183,6 @@ def preform_udp_message_action(command, value):
         cameraSensitivity = int(value)
         print "New camera sens: ", cameraSensitivity
 
-# Updates system status based on GPIO inputs
 def update_system_status():
     global localControllInput
     global motionDetectionControllInput
@@ -254,12 +247,19 @@ def update_frame():
     global cameraSensitivity
     global sendEmailWhenTriggered
 
+    # Return value and the current frame
     ret, frame = cam.read()
 
+    #Check if a current frame actually exist
     if (ret):
        frameCount += 1
+       # Resize the frame
        resizedFrame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
+
+       # Get the foreground mask
        fgmask = fgbg.apply(resizedFrame)
+
+       # Count all the non zero pixels within the mask
        count = np.count_nonzero(fgmask)
 
        if (frameCount > 1 and count > cameraSensitivity):
@@ -286,7 +286,7 @@ def read_nunchuck():
         data = [data0, data1, data2, data3, data4, data5]
         joy_x = data[0]
         button_z = data[5]&0x01
-
+        
         while (joy_x == 0):
             send_rotate_cw_serial_message()
             bus.write_byte(address, 0x00)
@@ -318,13 +318,13 @@ while True:
         cam = cv2.VideoCapture(0)
         time.sleep(2)
 
-    read_local_controll_input()
+    read_local_controll()
     read_reset_alarm()
     update_system_status()
 
     if (localControllInput == 1):
         read_nunchuck()
-        read_motion_detection_input()
+        read_motion_detection()
     else:
         read_udp_message()
 
